@@ -1,6 +1,6 @@
 // src/services/apiService.js
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = 'https://sistema-ime.onrender.com/';
 
 // Obtener instituciones
 export const obtenerInstituciones = async () => {
