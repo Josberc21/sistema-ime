@@ -1,4 +1,4 @@
-// src/services/apiService.js
+// src/services/apiService.js - v2
 
 // Configuración dinámica según el entorno
 const API_URL = import.meta.env.VITE_API_URL || 
