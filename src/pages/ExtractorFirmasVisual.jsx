@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Save, ZoomIn, ZoomOut, CheckCircle, Download, Hand, Wand2, Eraser, RotateCcw, Check, RotateCw } from 'lucide-react';
+import { ArrowLeft, Upload, Save, ZoomIn, ZoomOut, CheckCircle, Download, Hand, Wand2, Eraser, RotateCcw, Check, RotateCw, X } from 'lucide-react';
 import institucionesData from '../data/instituciones.json';
 import firmasDataImport from '../data/firmas.json';
 import { fusionarEstudiantes } from '../services/storageService';
@@ -46,6 +46,13 @@ const ExtractorFirmasVisual = () => {
     const [tamañoBorrador, setTamañoBorrador] = useState(20);
     const [imagenEditorOriginal, setImagenEditorOriginal] = useState(null);
     const [anguloRotacion, setAnguloRotacion] = useState(0);
+
+    // Estado para firma táctil
+    const [mostrarPadFirma, setMostrarPadFirma] = useState(false);
+    const padFirmaRef = useRef(null);
+    const [firmaDibujada, setFirmaDibujada] = useState(null);
+    const [dibujando, setDibujando] = useState(false);
+    const [ultimaPosicion, setUltimaPosicion] = useState(null);
 
     // Cargar datos del backend
     useEffect(() => {
@@ -432,7 +439,7 @@ const ExtractorFirmasVisual = () => {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        
+
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
 
@@ -507,7 +514,136 @@ const ExtractorFirmasVisual = () => {
             reader.readAsDataURL(file);
         }
     };
+    // ========== FUNCIONES DE FIRMA TÁCTIL ==========
 
+    const iniciarDibujo = (e) => {
+        setDibujando(true);
+        const canvas = padFirmaRef.current;
+        const rect = canvas.getBoundingClientRect();
+
+        let x, y;
+        if (e.type === 'touchstart') {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        }
+
+        setUltimaPosicion({ x, y });
+    };
+
+    const dibujar = (e) => {
+        if (!dibujando) return;
+
+        e.preventDefault();
+        const canvas = padFirmaRef.current;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+
+        let x, y;
+        if (e.type === 'touchmove') {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        }
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(ultimaPosicion.x, ultimaPosicion.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        setUltimaPosicion({ x, y });
+    };
+
+    const terminarDibujo = () => {
+        setDibujando(false);
+    };
+
+    const limpiarPadFirma = () => {
+        const canvas = padFirmaRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        setFirmaDibujada(null);
+    };
+
+    const guardarFirmaDibujada = () => {
+        const canvas = padFirmaRef.current;
+
+        // Verificar si hay algo dibujado
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+        let hayTrazo = false;
+
+        for (let i = 0; i < pixels.length; i += 4) {
+            if (pixels[i] < 250 || pixels[i + 1] < 250 || pixels[i + 2] < 250) {
+                hayTrazo = true;
+                break;
+            }
+        }
+
+        if (!hayTrazo) {
+            alert('⚠️ Debes dibujar la firma antes de guardar');
+            return;
+        }
+
+        // Procesar y guardar
+        let firmaBase64 = canvas.toDataURL('image/png');
+
+        if (procesarAutomatico) {
+            // Aplicar procesamiento
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+
+            const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                if (brightness > 240) {
+                    data[i + 3] = 0;
+                }
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            firmaBase64 = autoRecortarMejorado(tempCanvas);
+        }
+
+        setAreaSeleccionada(firmaBase64);
+        setMostrarPadFirma(false);
+    };
+
+    const abrirPadFirma = () => {
+        if (!estudianteActual) {
+            alert('⚠️ Primero selecciona un estudiante de la lista');
+            return;
+        }
+        setMostrarPadFirma(true);
+
+        // Inicializar canvas
+        setTimeout(() => {
+            if (padFirmaRef.current) {
+                const canvas = padFirmaRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }, 100);
+    };
+
+    // ========== FIN FUNCIONES DE FIRMA TÁCTIL ==========
     // Dibujar en canvas
     useEffect(() => {
         if (!imagenCargada || !canvasRef.current) return;
@@ -781,7 +917,7 @@ const ExtractorFirmasVisual = () => {
                                             onClick={() => setInstitucionSeleccionada(inst)}
                                             className="w-full p-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl transition-all transform hover:scale-102 shadow-lg text-left"
                                         >
-                                            
+
                                             <h3 className="text-2xl font-bold">{inst.nombre}</h3>
                                             <p className="text-blue-100 text-sm mt-1">
                                                 👥 {inst.estudiantes.length} estudiantes
@@ -946,6 +1082,13 @@ const ExtractorFirmasVisual = () => {
                                 >
                                     ✂️ Seleccionar Firma
                                 </button>
+                                <button
+                                    onClick={abrirPadFirma}
+                                    disabled={!estudianteActual}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                    ✍️ Dibujar Firma (Táctil)
+                                </button>
                             </div>
 
                             <div
@@ -997,7 +1140,7 @@ const ExtractorFirmasVisual = () => {
                                             className="max-h-32 mx-auto"
                                         />
                                     </div>
-                                    
+
                                     <div className="flex gap-2 mt-3">
                                         <button
                                             onClick={() => setModoEditor(true)}
@@ -1073,7 +1216,7 @@ const ExtractorFirmasVisual = () => {
 
                                     {/* Control de tamaño del borrador */}
                                     <div className="mb-3 p-3 bg-white rounded-lg border-2 border-orange-300">
-                                       <label className="flex items-center gap-2 text-sm font-semibold text-blue-900 mb-2">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-blue-900 mb-2">
                                             <Eraser size={16} />
                                             Tamaño del borrador: {tamañoBorrador}px
                                         </label>
@@ -1091,24 +1234,24 @@ const ExtractorFirmasVisual = () => {
                                         </div>
                                     </div>
 
-                                  {/* Canvas del editor */}
-<div className="bg-white p-4 rounded border-2 border-orange-400 mb-3 overflow-auto max-h-[500px]" style={{
-    backgroundImage: 'repeating-linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0), repeating-linear-gradient(45deg, #f0f0f0 25%, white 25%, white 75%, #f0f0f0 75%, #f0f0f0)',
-    backgroundPosition: '0 0, 10px 10px',
-    backgroundSize: '20px 20px'
-}}>
-    <div className="flex justify-center">
-        <canvas
-            ref={editorCanvasRef}
-            onMouseDown={handleEditorMouseDown}
-            onMouseMove={handleEditorMouseMove}
-            onMouseUp={handleEditorMouseUp}
-            onMouseLeave={handleEditorMouseUp}
-            className="cursor-crosshair border border-orange-300 shadow-lg"
-            style={{ maxWidth: '100%' }}
-        />
-    </div>
-</div>
+                                    {/* Canvas del editor */}
+                                    <div className="bg-white p-4 rounded border-2 border-orange-400 mb-3 overflow-auto max-h-[500px]" style={{
+                                        backgroundImage: 'repeating-linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0), repeating-linear-gradient(45deg, #f0f0f0 25%, white 25%, white 75%, #f0f0f0 75%, #f0f0f0)',
+                                        backgroundPosition: '0 0, 10px 10px',
+                                        backgroundSize: '20px 20px'
+                                    }}>
+                                        <div className="flex justify-center">
+                                            <canvas
+                                                ref={editorCanvasRef}
+                                                onMouseDown={handleEditorMouseDown}
+                                                onMouseMove={handleEditorMouseMove}
+                                                onMouseUp={handleEditorMouseUp}
+                                                onMouseLeave={handleEditorMouseUp}
+                                                className="cursor-crosshair border border-orange-300 shadow-lg"
+                                                style={{ maxWidth: '100%' }}
+                                            />
+                                        </div>
+                                    </div>
 
                                     {/* Botones de control del editor */}
                                     <div className="flex gap-2">
@@ -1133,6 +1276,64 @@ const ExtractorFirmasVisual = () => {
                                     </p>
                                 </div>
                             )}
+                            {/* Modal Pad de Firma */}
+{mostrarPadFirma && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-gray-800">
+          ✍️ Dibujar Firma: {estudianteActual?.primerNombre} {estudianteActual?.primerApellido}
+        </h3>
+        <button
+          onClick={() => setMostrarPadFirma(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <X size={24} />
+        </button>
+      </div>
+      
+      <p className="text-sm text-gray-600 mb-4">
+        📱 Dibuja la firma con tu dedo (móvil) o mouse (PC)
+      </p>
+      
+      <div className="border-4 border-gray-300 rounded-lg overflow-hidden bg-white mb-4">
+        <canvas
+          ref={padFirmaRef}
+          width={600}
+          height={300}
+          onMouseDown={iniciarDibujo}
+          onMouseMove={dibujar}
+          onMouseUp={terminarDibujo}
+          onMouseLeave={terminarDibujo}
+          onTouchStart={iniciarDibujo}
+          onTouchMove={dibujar}
+          onTouchEnd={terminarDibujo}
+          className="w-full cursor-crosshair touch-none"
+          style={{ touchAction: 'none' }}
+        />
+      </div>
+      
+      <div className="flex gap-3">
+        <button
+          onClick={limpiarPadFirma}
+          className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+        >
+          🗑️ Limpiar
+        </button>
+        <button
+          onClick={guardarFirmaDibujada}
+          className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+        >
+          ✓ Usar esta firma
+        </button>
+      </div>
+      
+      <p className="text-xs text-gray-500 mt-3 text-center">
+        💡 La firma se procesará automáticamente si tienes activada la opción
+      </p>
+    </div>
+  </div>
+)}
                         </div>
 
                         {/* Panel derecho: Lista de estudiantes */}

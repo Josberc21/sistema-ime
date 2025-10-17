@@ -15,9 +15,9 @@ const DocentePage = () => {
   const [cargando, setCargando] = useState(true);
   const [institucionSeleccionada, setInstitucionSeleccionada] = useState(null);
   const [estudiantesActuales, setEstudiantesActuales] = useState([]);
- const [fechaSesion, setFechaSesion] = useState(
-  new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Bogota' })
-);
+  const [fechaSesion, setFechaSesion] = useState(
+    new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Bogota' })
+  );
   const [numeroSesion, setNumeroSesion] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [asistencia, setAsistencia] = useState({});
@@ -46,7 +46,7 @@ const DocentePage = () => {
       setFirmasData(dataFirmas);
     } catch (error) {
       console.error('Error al cargar datos:', error);
-     alert('⚠️ Error al conectar con el servidor. Verifica tu conexión.');
+      alert('⚠️ Error al conectar con el servidor. Verifica tu conexión.');
     } finally {
       setCargando(false);
     }
@@ -80,12 +80,12 @@ const DocentePage = () => {
 
     try {
       const resultado = await agregarEstudianteAPI(institucionSeleccionada.id, nuevoEstudiante);
-      
+
       if (resultado.success) {
         // Actualizar estado local
         setEstudiantesActuales([...estudiantesActuales, resultado.estudiante]);
         setAsistencia({ ...asistencia, [resultado.estudiante.id]: true });
-        
+
         // Actualizar instituciones
         const instActualizada = instituciones.map(inst => {
           if (inst.id === institucionSeleccionada.id) {
@@ -97,7 +97,7 @@ const DocentePage = () => {
           return inst;
         });
         setInstituciones(instActualizada);
-        
+
         // Limpiar formulario
         setNuevoEstudiante({
           primerApellido: '',
@@ -118,14 +118,14 @@ const DocentePage = () => {
     const confirmacion = window.confirm(
       `¿Estás seguro de eliminar a:\n\n${nombreCompleto}?\n\nEsta acción es permanente.`
     );
-    
+
     if (confirmacion) {
       try {
         await eliminarEstudianteAPI(institucionSeleccionada.id, estudianteId);
-        
+
         // Actualizar estado local
         setEstudiantesActuales(estudiantesActuales.filter(e => e.id !== estudianteId));
-        
+
         // Actualizar instituciones
         const instActualizada = instituciones.map(inst => {
           if (inst.id === institucionSeleccionada.id) {
@@ -137,12 +137,12 @@ const DocentePage = () => {
           return inst;
         });
         setInstituciones(instActualizada);
-        
+
         // Eliminar de asistencia
         const nuevaAsistencia = { ...asistencia };
         delete nuevaAsistencia[estudianteId];
         setAsistencia(nuevaAsistencia);
-        
+
         alert('✅ Estudiante eliminado permanentemente');
       } catch (error) {
         alert(`⚠️ Error al eliminar: ${error.message}`);
@@ -151,98 +151,152 @@ const DocentePage = () => {
   };
 
   const generarPDF = () => {
-    if (!institucionSeleccionada) return;
+  if (!institucionSeleccionada) return;
 
-    const doc = new jsPDF('landscape', 'mm', 'a4');
-    const institucion = institucionSeleccionada;
+  const doc = new jsPDF('landscape', 'mm', 'a4');
+  const institucion = institucionSeleccionada;
 
-    // ENCABEZADO CON RECUADROS GRISES
-    const topHeaderHeight = 18;
-    const marginX = 10;
-    const logoLeftWidth = 45;
-    const logoRightWidth = 50;
-    const titleWidth = 277 - logoLeftWidth - logoRightWidth;
+  // ENCABEZADO CON RECUADROS GRISES Y LOGOS CENTRADOS
+  const topHeaderHeight = 18;
+  const marginX = 10;
+  const logoLeftWidth = 45;
+  const logoRightWidth = 50;
+  const titleWidth = 277 - logoLeftWidth - logoRightWidth;
 
-    doc.setFillColor(220, 220, 220);
-    doc.rect(marginX, 5, logoLeftWidth, topHeaderHeight, 'FD');
-    doc.rect(marginX + logoLeftWidth, 5, titleWidth, topHeaderHeight, 'FD');
-    doc.rect(marginX + logoLeftWidth + titleWidth, 5, logoRightWidth, topHeaderHeight, 'FD');
+  // Recuadros grises
+  doc.setFillColor(220, 220, 220);
+  doc.rect(marginX, 5, logoLeftWidth, topHeaderHeight, 'FD');
+  doc.rect(marginX + logoLeftWidth, 5, titleWidth, topHeaderHeight, 'FD');
+  doc.rect(marginX + logoLeftWidth + titleWidth, 5, logoRightWidth, topHeaderHeight, 'FD');
 
-    try {
-      doc.addImage(logoAlcaldia, 'PNG', 17, 8, 25, 12);
-    } catch (error) {
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Alcaldía de', 22, 13);
-      doc.text('Medellín', 22, 17);
-    }
-
-    doc.setFontSize(10);
+  // Logo Alcaldía CENTRADO
+  try {
+    const logoAlcWidth = 25;
+    const logoAlcHeight = 12;
+    const logoAlcX = marginX + (logoLeftWidth - logoAlcWidth) / 2;
+    const logoAlcY = 5 + (topHeaderHeight - logoAlcHeight) / 2;
+    doc.addImage(logoAlcaldia, 'PNG', logoAlcX, logoAlcY, logoAlcWidth, logoAlcHeight);
+  } catch (error) {
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('CONVENIO DE ASOCIACIÓN ROBOTICA EDUCACIÓN COMPLEMENTARIA', 148.5, 12, { align: 'center' });
-    try {
-      doc.addImage(logoIme, 'PNG', 260, 8, 25, 12);
-    } catch (error) {
-      doc.setFontSize(9);
-      doc.text('IME', 262, 10);
+    doc.text('Alcaldía de', marginX + logoLeftWidth / 2, 12, { align: 'center' });
+    doc.text('Medellín', marginX + logoLeftWidth / 2, 16, { align: 'center' });
+  }
+
+  // Título central
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  const centerX = marginX + logoLeftWidth + titleWidth / 2;
+  doc.text('CONVENIO DE ASOCIACIÓN ROBOTICA', centerX, 12, { align: 'center' });
+  doc.text('EDUCACIÓN COMPLEMENTARIA', centerX, 17, { align: 'center' });
+
+  // Logo IME CENTRADO
+  try {
+    const logoImeWidth = 25;
+    const logoImeHeight = 12;
+    const logoImeX = marginX + logoLeftWidth + titleWidth + (logoRightWidth - logoImeWidth) / 2;
+    const logoImeY = 5 + (topHeaderHeight - logoImeHeight) / 2;
+    doc.addImage(logoIme, 'PNG', logoImeX, logoImeY, logoImeWidth, logoImeHeight);
+  } catch (error) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(128, 0, 128);
+    const imeX = marginX + logoLeftWidth + titleWidth + logoRightWidth / 2;
+    doc.text('IME', imeX, 10, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('ESCUELAS', imeX, 14, { align: 'center' });
+    doc.text('TÉCNICAS', imeX, 17, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+  }
+
+  // Tabla de información institucional CON TODAS LAS CUADRÍCULAS
+  const infoStartY = 24;
+  const rowHeight = 6;
+  const col1LabelWidth = 78;
+  const col1ValueWidth = 112;
+  const col2LabelWidth = 47;
+  const col2ValueWidth = 40;
+  const startX = 10;
+  const col2StartX = 200;
+
+  doc.setFontSize(8);
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(0, 0, 0);
+
+  // Función auxiliar para truncar texto largo
+  const truncarTexto = (texto, maxLength) => {
+    if (!texto) return '';
+    return texto.length > maxLength ? texto.substring(0, maxLength - 3) + '...' : texto;
+  };
+
+  // Filas de información
+  const filas = [
+    {
+      izq: { label: 'INSTITUCIÓN EDUCATIVA:', value: truncarTexto(institucion.nombre, 45) },
+      der: { label: 'COMUNA:', value: institucion.comuna || '' }
+    },
+    {
+      izq: { label: 'FORMADOR IME:', value: truncarTexto(institucion.formador, 45) },
+      der: { label: 'DOCENTE ENLACE INSTITUCIÓN:', value: truncarTexto(institucion.docente || '', 18) }
+    },
+    {
+      izq: { label: 'HORARIO DE CLASE (DÍA Y HORA):', value: truncarTexto(institucion.horario, 45) },
+      der: { label: 'NÚMERO DE SESIÓN:', value: numeroSesion || '' }
+    },
+    {
+      izq: { label: 'OBSERVACIONES:', value: truncarTexto(observaciones || '', 45) },
+      der: { label: 'FECHA DE LA SESIÓN:', value: fechaSesion }
+    }
+  ];
+
+  filas.forEach((fila, index) => {
+    const y = infoStartY + (rowHeight * index);
+    
+    // Celdas con fondo gris y bordes
+    doc.setFillColor(220, 220, 220);
+    doc.rect(startX, y, col1LabelWidth, rowHeight, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(startX + col1LabelWidth, y, col1ValueWidth, rowHeight, 'FD');
+    doc.setFillColor(220, 220, 220);
+    doc.rect(col2StartX, y, col2LabelWidth, rowHeight, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(col2StartX + col2LabelWidth, y, col2ValueWidth, rowHeight, 'FD');
+
+    // Textos
+    doc.setFont('helvetica', 'bold');
+    
+    // Label izquierdo (puede ser multilínea)
+    const labelIzqLines = fila.izq.label.split('\n');
+    if (labelIzqLines.length > 1) {
       doc.setFontSize(7);
-      doc.text('ESCUELAS', 256, 14);
-      doc.text('TÉCNICAS', 256, 17);
+      doc.text(labelIzqLines[0], startX + 2, y + 3.5);
+      doc.text(labelIzqLines[1], startX + 2, y + 5.5);
+    } else {
+      doc.setFontSize(8);
+      doc.text(fila.izq.label, startX + 2, y + 4.5);
+    }
+    
+    // Label derecho (puede ser multilínea)
+    const labelDerLines = fila.der.label.split('\n');
+    if (labelDerLines.length > 1) {
+      doc.setFontSize(7);
+      doc.text(labelDerLines[0], col2StartX + 2, y + 3.5);
+      doc.text(labelDerLines[1], col2StartX + 2, y + 5.5);
+    } else {
+      doc.setFontSize(8);
+      doc.text(fila.der.label, col2StartX + 2, y + 4.5);
     }
 
-    // Tabla de información institucional
-    const infoStartY = 24;
-    const rowHeight = 6;
-    const col1LabelWidth = 78;
-    const col1ValueWidth = 112;
-    const col2LabelWidth = 47;
-    const col2ValueWidth = 40;
-    const startX = 10;
-    const col2StartX = 200;
-
-    // Filas de información
-    const filas = [
-      {
-        izq: { label: 'INSTITUCIÓN EDUCATIVA:', value: institucion.nombre },
-        der: { label: 'COMUNA:', value: institucion.comuna || '' }
-      },
-      {
-        izq: { label: 'FORMADOR IME:', value: institucion.formador },
-        der: { label: 'DOCENTE ENLACE INSTITUCIÓN:', value: institucion.docente || '' }
-      },
-      {
-        izq: { label: 'HORARIO DE CLASE (DÍA Y HORA):', value: institucion.horario },
-        der: { label: 'NÚMERO DE SESIÓN:', value: numeroSesion || '' }
-      },
-      {
-        izq: { label: 'OBSERVACIONES:', value: observaciones || '' },
-        der: { label: 'FECHA DE LA SESIÓN:', value: fechaSesion }
-      }
-    ];
-
-    filas.forEach((fila, index) => {
-      const y = infoStartY + (rowHeight * index);
-      
-      doc.setFillColor(220, 220, 220);
-      doc.rect(startX, y, col1LabelWidth, rowHeight, 'FD');
-      doc.rect(startX + col1LabelWidth, y, col1ValueWidth, rowHeight, index === 3 ? 'F' : 'FD');
-      doc.rect(col2StartX, y, col2LabelWidth, rowHeight, 'FD');
-      doc.rect(col2StartX + col2LabelWidth, y, col2ValueWidth, rowHeight, 'F');
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text(fila.izq.label, startX + 2, y + 4.5);
-      doc.text(fila.der.label, col2StartX + 2, y + 4.5);
-
-      doc.setFont('helvetica', 'normal');
-      doc.text(fila.izq.value, startX + col1LabelWidth + 2, y + 4.5);
-      doc.text(fila.der.value, col2StartX + col2LabelWidth + 2, y + 4.5);
-    });
-
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(fila.izq.value, startX + col1LabelWidth + 2, y + 4.5);
+    doc.text(fila.der.value, col2StartX + col2LabelWidth + 2, y + 4.5);
+  });
     // Preparar datos de la tabla
     const estudiantesPresentes = estudiantesActuales.filter(e => asistencia[e.id]);
-    
+
     if (estudiantesPresentes.length === 0) {
       alert('⚠️ No hay estudiantes marcados como presentes');
       return;
@@ -318,20 +372,20 @@ const DocentePage = () => {
           try {
             const img = new Image();
             img.src = firmaImg;
-            
+
             const maxWidth = data.cell.width - 4;
             const maxHeight = data.cell.height - 2;
-            
+
             let width = img.width || maxWidth;
             let height = img.height || maxHeight;
-            
+
             const ratio = Math.min(maxWidth / width, maxHeight / height);
             width = width * ratio;
             height = height * ratio;
-            
+
             const x = data.cell.x + (data.cell.width - width) / 2;
             const y = data.cell.y + (data.cell.height - height) / 2;
-            
+
             doc.addImage(firmaImg, 'PNG', x, y, width, height, undefined, 'FAST');
           } catch (error) {
             console.error('Error al insertar firma:', error);
@@ -368,7 +422,7 @@ const DocentePage = () => {
                 <ArrowLeft className="mr-2" size={20} />
                 Volver al inicio
               </button>
-              
+
               <button
                 onClick={cargarDatos}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
@@ -594,11 +648,10 @@ const DocentePage = () => {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => toggleAsistencia(estudiante.id)}
-                          className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                            asistencia[estudiante.id]
+                          className={`px-6 py-2 rounded-lg font-semibold transition-all ${asistencia[estudiante.id]
                               ? 'bg-green-600 text-white hover:bg-green-700'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
+                            }`}
                         >
                           {asistencia[estudiante.id] ? (
                             <span className="flex items-center justify-center gap-2">

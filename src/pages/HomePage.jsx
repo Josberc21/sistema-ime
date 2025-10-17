@@ -48,6 +48,17 @@ const HomePage = () => {
             🔒 Herramienta interna - Gestión de firmas
           </p>
         </button>
+        <button
+          onClick={() => {
+            localStorage.removeItem('ime_authenticated');
+            localStorage.removeItem('ime_user');
+            localStorage.removeItem('ime_login_time');
+            window.location.href = '/login';
+          }}
+          className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition-all"
+        >
+          🚪 Cerrar Sesión
+        </button>
 
         {/* Footer */}
         <div className="mt-10 text-center text-gray-500 text-sm">
