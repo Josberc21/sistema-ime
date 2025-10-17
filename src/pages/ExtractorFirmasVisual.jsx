@@ -517,55 +517,65 @@ const ExtractorFirmasVisual = () => {
     // ========== FUNCIONES DE FIRMA TÁCTIL ==========
 
     const iniciarDibujo = (e) => {
-        setDibujando(true);
-        const canvas = padFirmaRef.current;
-        const rect = canvas.getBoundingClientRect();
+    setDibujando(true);
+    const canvas = padFirmaRef.current;
+    const rect = canvas.getBoundingClientRect();
 
-        let x, y;
-        if (e.type === 'touchstart') {
-            x = e.touches[0].clientX - rect.left;
-            y = e.touches[0].clientY - rect.top;
-        } else {
-            x = e.clientX - rect.left;
-            y = e.clientY - rect.top;
-        }
+    // Calcular escala del canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
 
-        setUltimaPosicion({ x, y });
-    };
+    let x, y;
+    if (e.type === 'touchstart') {
+        const touch = e.touches[0];
+        x = (touch.clientX - rect.left) * scaleX;
+        y = (touch.clientY - rect.top) * scaleY;
+    } else {
+        x = (e.clientX - rect.left) * scaleX;
+        y = (e.clientY - rect.top) * scaleY;
+    }
 
-    const dibujar = (e) => {
-        if (!dibujando) return;
+    setUltimaPosicion({ x, y });
+};
 
-        e.preventDefault();
-        const canvas = padFirmaRef.current;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const rect = canvas.getBoundingClientRect();
+const dibujar = (e) => {
+    if (!dibujando) return;
 
-        let x, y;
-        if (e.type === 'touchmove') {
-            x = e.touches[0].clientX - rect.left;
-            y = e.touches[0].clientY - rect.top;
-        } else {
-            x = e.clientX - rect.left;
-            y = e.clientY - rect.top;
-        }
+    e.preventDefault();
+    const canvas = padFirmaRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const rect = canvas.getBoundingClientRect();
 
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+    // Calcular escala del canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
 
-        ctx.beginPath();
-        ctx.moveTo(ultimaPosicion.x, ultimaPosicion.y);
-        ctx.lineTo(x, y);
-        ctx.stroke();
+    let x, y;
+    if (e.type === 'touchmove') {
+        const touch = e.touches[0];
+        x = (touch.clientX - rect.left) * scaleX;
+        y = (touch.clientY - rect.top) * scaleY;
+    } else {
+        x = (e.clientX - rect.left) * scaleX;
+        y = (e.clientY - rect.top) * scaleY;
+    }
 
-        setUltimaPosicion({ x, y });
-    };
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3; // Aumentado para mejor visualización en móvil
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    const terminarDibujo = () => {
-        setDibujando(false);
-    };
+    ctx.beginPath();
+    ctx.moveTo(ultimaPosicion.x, ultimaPosicion.y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    setUltimaPosicion({ x, y });
+};
+
+const terminarDibujo = () => {
+    setDibujando(false);
+};
 
     const limpiarPadFirma = () => {
         const canvas = padFirmaRef.current;
