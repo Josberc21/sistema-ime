@@ -46,7 +46,7 @@ const DocentePage = () => {
       setFirmasData(dataFirmas);
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      alert('⚠️ Error al conectar con el servidor. Asegúrate de que el backend esté corriendo en http://localhost:3001');
+     alert('⚠️ Error al conectar con el servidor. Verifica tu conexión.');
     } finally {
       setCargando(false);
     }
