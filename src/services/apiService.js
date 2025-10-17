@@ -1,6 +1,10 @@
 // src/services/apiService.js
 
-const API_URL = 'https://sistema-ime.onrender.com/';
+// Configuración dinámica según el entorno
+const API_URL = import.meta.env.VITE_API_URL || 
+                (import.meta.env.PROD 
+                  ? 'https://sistema-ime.onrender.com'  // Producción
+                  : 'http://localhost:3001');            // Desarrollo
 
 // Obtener instituciones
 export const obtenerInstituciones = async () => {
