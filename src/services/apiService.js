@@ -1,19 +1,23 @@
-// src/services/apiService.js - v2
+// src/services/apiService.js - VERSIÓN SIMPLIFICADA PARA DEBUG
 
-// Configuración dinámica según el entorno
-const API_URL = import.meta.env.VITE_API_URL || 
-                (import.meta.env.PROD 
-                  ? 'https://sistema-ime.onrender.com/api'  // Producción
-                  : 'http://localhost:3001/api');            // Desarrollo
+const API_URL = 'https://sistema-ime.onrender.com/api';
+
+console.log('🔍 API_URL configurada:', API_URL);
+console.log('🔍 Environment:', import.meta.env.MODE);
+console.log('🔍 PROD:', import.meta.env.PROD);
 
 // Obtener instituciones
 export const obtenerInstituciones = async () => {
+  const url = `${API_URL}/instituciones`;
+  console.log('🔍 Llamando a:', url);
+  
   try {
-    const response = await fetch(`${API_URL}/instituciones`);
+    const response = await fetch(url);
+    console.log('✅ Response status:', response.status);
     if (!response.ok) throw new Error('Error al obtener instituciones');
     return await response.json();
   } catch (error) {
-    console.error('Error:', error);
+    console.error('❌ Error completo:', error);
     throw error;
   }
 };
@@ -56,12 +60,16 @@ export const eliminarEstudiante = async (institucionId, estudianteId) => {
 
 // Obtener firmas
 export const obtenerFirmas = async () => {
+  const url = `${API_URL}/firmas`;
+  console.log('🔍 Llamando a firmas:', url);
+  
   try {
-    const response = await fetch(`${API_URL}/firmas`);
+    const response = await fetch(url);
+    console.log('✅ Firmas response status:', response.status);
     if (!response.ok) throw new Error('Error al obtener firmas');
     return await response.json();
   } catch (error) {
-    console.error('Error:', error);
+    console.error('❌ Error firmas:', error);
     throw error;
   }
 };
