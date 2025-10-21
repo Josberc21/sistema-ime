@@ -30,7 +30,6 @@ const DocentePage = () => {
     documento: ''
   });
 
-  // Cargar datos iniciales del backend
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -71,7 +70,6 @@ const DocentePage = () => {
       return;
     }
 
-    // Verificar duplicados localmente
     const existe = estudiantesActuales.find(e => e.documento === nuevoEstudiante.documento);
     if (existe) {
       alert('⚠️ Ya existe un estudiante con ese número de documento');
@@ -82,11 +80,9 @@ const DocentePage = () => {
       const resultado = await agregarEstudianteAPI(institucionSeleccionada.id, nuevoEstudiante);
 
       if (resultado.success) {
-        // Actualizar estado local
         setEstudiantesActuales([...estudiantesActuales, resultado.estudiante]);
         setAsistencia({ ...asistencia, [resultado.estudiante.id]: true });
 
-        // Actualizar instituciones
         const instActualizada = instituciones.map(inst => {
           if (inst.id === institucionSeleccionada.id) {
             return {
@@ -98,7 +94,6 @@ const DocentePage = () => {
         });
         setInstituciones(instActualizada);
 
-        // Limpiar formulario
         setNuevoEstudiante({
           primerApellido: '',
           segundoApellido: '',
@@ -123,10 +118,8 @@ const DocentePage = () => {
       try {
         await eliminarEstudianteAPI(institucionSeleccionada.id, estudianteId);
 
-        // Actualizar estado local
         setEstudiantesActuales(estudiantesActuales.filter(e => e.id !== estudianteId));
 
-        // Actualizar instituciones
         const instActualizada = instituciones.map(inst => {
           if (inst.id === institucionSeleccionada.id) {
             return {
@@ -138,7 +131,6 @@ const DocentePage = () => {
         });
         setInstituciones(instActualizada);
 
-        // Eliminar de asistencia
         const nuevaAsistencia = { ...asistencia };
         delete nuevaAsistencia[estudianteId];
         setAsistencia(nuevaAsistencia);
@@ -151,158 +143,140 @@ const DocentePage = () => {
   };
 
   const generarPDF = () => {
-  if (!institucionSeleccionada) return;
+    if (!institucionSeleccionada) return;
 
-  const doc = new jsPDF('landscape', 'mm', 'a4');
-  const institucion = institucionSeleccionada;
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    const institucion = institucionSeleccionada;
 
-  // ENCABEZADO CON RECUADROS GRISES Y LOGOS CENTRADOS
-  const topHeaderHeight = 18;
-  const marginX = 10;
-  const logoLeftWidth = 45;
-  const logoRightWidth = 50;
-  const titleWidth = 277 - logoLeftWidth - logoRightWidth;
+    // ENCABEZADO CON RECUADROS GRISES Y LOGOS CENTRADOS
+    const topHeaderHeight = 18;
+    const marginX = 10;
+    const logoLeftWidth = 45;
+    const logoRightWidth = 50;
+    const titleWidth = 277 - logoLeftWidth - logoRightWidth;
 
-  // Recuadros grises
-  doc.setFillColor(220, 220, 220);
-  doc.rect(marginX, 5, logoLeftWidth, topHeaderHeight, 'FD');
-  doc.rect(marginX + logoLeftWidth, 5, titleWidth, topHeaderHeight, 'FD');
-  doc.rect(marginX + logoLeftWidth + titleWidth, 5, logoRightWidth, topHeaderHeight, 'FD');
+    doc.setFillColor(220, 220, 220);
+    doc.rect(marginX, 5, logoLeftWidth, topHeaderHeight, 'FD');
+    doc.rect(marginX + logoLeftWidth, 5, titleWidth, topHeaderHeight, 'FD');
+    doc.rect(marginX + logoLeftWidth + titleWidth, 5, logoRightWidth, topHeaderHeight, 'FD');
 
-  // Logo Alcaldía CENTRADO
-  try {
-    const logoAlcWidth = 25;
-    const logoAlcHeight = 12;
-    const logoAlcX = marginX + (logoLeftWidth - logoAlcWidth) / 2;
-    const logoAlcY = 5 + (topHeaderHeight - logoAlcHeight) / 2;
-    doc.addImage(logoAlcaldia, 'PNG', logoAlcX, logoAlcY, logoAlcWidth, logoAlcHeight);
-  } catch (error) {
-    doc.setFontSize(7);
+    try {
+      const logoAlcWidth = 25;
+      const logoAlcHeight = 12;
+      const logoAlcX = marginX + (logoLeftWidth - logoAlcWidth) / 2;
+      const logoAlcY = 5 + (topHeaderHeight - logoAlcHeight) / 2;
+      doc.addImage(logoAlcaldia, 'PNG', logoAlcX, logoAlcY, logoAlcWidth, logoAlcHeight);
+    } catch (error) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Alcaldía de', marginX + logoLeftWidth / 2, 12, { align: 'center' });
+      doc.text('Medellín', marginX + logoLeftWidth / 2, 16, { align: 'center' });
+    }
+
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Alcaldía de', marginX + logoLeftWidth / 2, 12, { align: 'center' });
-    doc.text('Medellín', marginX + logoLeftWidth / 2, 16, { align: 'center' });
-  }
+    const centerX = marginX + logoLeftWidth + titleWidth / 2;
+    doc.text('CONVENIO DE ASOCIACIÓN ROBOTICA EDUCACIÓN COMPLEMENTARIA', centerX, 12, { align: 'center' });
 
-  // Título central
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  const centerX = marginX + logoLeftWidth + titleWidth / 2;
-  doc.text('CONVENIO DE ASOCIACIÓN ROBOTICA', centerX, 12, { align: 'center' });
-  doc.text('EDUCACIÓN COMPLEMENTARIA', centerX, 17, { align: 'center' });
-
-  // Logo IME CENTRADO
-  try {
-    const logoImeWidth = 25;
-    const logoImeHeight = 12;
-    const logoImeX = marginX + logoLeftWidth + titleWidth + (logoRightWidth - logoImeWidth) / 2;
-    const logoImeY = 5 + (topHeaderHeight - logoImeHeight) / 2;
-    doc.addImage(logoIme, 'PNG', logoImeX, logoImeY, logoImeWidth, logoImeHeight);
-  } catch (error) {
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(128, 0, 128);
-    const imeX = marginX + logoLeftWidth + titleWidth + logoRightWidth / 2;
-    doc.text('IME', imeX, 10, { align: 'center' });
-    doc.setFontSize(7);
-    doc.text('ESCUELAS', imeX, 14, { align: 'center' });
-    doc.text('TÉCNICAS', imeX, 17, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
-  }
-
-  // Tabla de información institucional CON TODAS LAS CUADRÍCULAS
-  const infoStartY = 24;
-  const rowHeight = 6;
-  const col1LabelWidth = 78;
-  const col1ValueWidth = 112;
-  const col2LabelWidth = 47;
-  const col2ValueWidth = 40;
-  const startX = 10;
-  const col2StartX = 200;
-
-  doc.setFontSize(8);
-  doc.setLineWidth(0.3);
-  doc.setDrawColor(0, 0, 0);
-
-  // Función auxiliar para truncar texto largo
-  const truncarTexto = (texto, maxLength) => {
-    if (!texto) return '';
-    return texto.length > maxLength ? texto.substring(0, maxLength - 3) + '...' : texto;
-  };
-
-  // Filas de información
-  const filas = [
-    {
-      izq: { label: 'INSTITUCIÓN EDUCATIVA:', value: truncarTexto(institucion.nombre, 45) },
-      der: { label: 'COMUNA:', value: institucion.comuna || '' }
-    },
-    {
-      izq: { label: 'FORMADOR IME:', value: truncarTexto(institucion.formador, 45) },
-      der: { label: 'DOCENTE ENLACE INSTITUCIÓN:', value: truncarTexto(institucion.docente || '', 18) }
-    },
-    {
-      izq: { label: 'HORARIO DE CLASE (DÍA Y HORA):', value: truncarTexto(institucion.horario, 45) },
-      der: { label: 'NÚMERO DE SESIÓN:', value: numeroSesion || '' }
-    },
-    {
-      izq: { label: 'OBSERVACIONES:', value: truncarTexto(observaciones || '', 45) },
-      der: { label: 'FECHA DE LA SESIÓN:', value: fechaSesion }
-    }
-  ];
-
-  filas.forEach((fila, index) => {
-    const y = infoStartY + (rowHeight * index);
-    
-    // Celdas con fondo gris y bordes
-    doc.setFillColor(220, 220, 220);
-    doc.rect(startX, y, col1LabelWidth, rowHeight, 'FD');
-    doc.setFillColor(255, 255, 255);
-    doc.rect(startX + col1LabelWidth, y, col1ValueWidth, rowHeight, 'FD');
-    doc.setFillColor(220, 220, 220);
-    doc.rect(col2StartX, y, col2LabelWidth, rowHeight, 'FD');
-    doc.setFillColor(255, 255, 255);
-    doc.rect(col2StartX + col2LabelWidth, y, col2ValueWidth, rowHeight, 'FD');
-
-    // Textos
-    doc.setFont('helvetica', 'bold');
-    
-    // Label izquierdo (puede ser multilínea)
-    const labelIzqLines = fila.izq.label.split('\n');
-    if (labelIzqLines.length > 1) {
+    try {
+      const logoImeWidth = 25;
+      const logoImeHeight = 12;
+      const logoImeX = marginX + logoLeftWidth + titleWidth + (logoRightWidth - logoImeWidth) / 2;
+      const logoImeY = 5 + (topHeaderHeight - logoImeHeight) / 2;
+      doc.addImage(logoIme, 'PNG', logoImeX, logoImeY, logoImeWidth, logoImeHeight);
+    } catch (error) {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(128, 0, 128);
+      const imeX = marginX + logoLeftWidth + titleWidth + logoRightWidth / 2;
+      doc.text('IME', imeX, 10, { align: 'center' });
       doc.setFontSize(7);
-      doc.text(labelIzqLines[0], startX + 2, y + 3.5);
-      doc.text(labelIzqLines[1], startX + 2, y + 5.5);
-    } else {
-      doc.setFontSize(8);
-      doc.text(fila.izq.label, startX + 2, y + 4.5);
-    }
-    
-    // Label derecho (puede ser multilínea)
-    const labelDerLines = fila.der.label.split('\n');
-    if (labelDerLines.length > 1) {
-      doc.setFontSize(7);
-      doc.text(labelDerLines[0], col2StartX + 2, y + 3.5);
-      doc.text(labelDerLines[1], col2StartX + 2, y + 5.5);
-    } else {
-      doc.setFontSize(8);
-      doc.text(fila.der.label, col2StartX + 2, y + 4.5);
+      doc.text('ESCUELAS', imeX, 14, { align: 'center' });
+      doc.text('TÉCNICAS', imeX, 17, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
     }
 
-    doc.setFont('helvetica', 'normal');
+    const infoStartY = 24;
+    const rowHeight = 6;
+    const col1LabelWidth = 78;
+    const col1ValueWidth = 112;
+    const col2LabelWidth = 47;
+    const col2ValueWidth = 40;
+    const startX = 10;
+    const col2StartX = 200;
+
     doc.setFontSize(8);
-    doc.text(fila.izq.value, startX + col1LabelWidth + 2, y + 4.5);
-    doc.text(fila.der.value, col2StartX + col2LabelWidth + 2, y + 4.5);
-  });
-    // Preparar datos de la tabla
-    const estudiantesPresentes = estudiantesActuales.filter(e => asistencia[e.id]);
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(0, 0, 0);
 
-    if (estudiantesPresentes.length === 0) {
-      alert('⚠️ No hay estudiantes marcados como presentes');
-      return;
-    }
+    const truncarTexto = (texto, maxLength) => {
+      if (!texto) return '';
+      return texto.length > maxLength ? texto.substring(0, maxLength - 3) + '...' : texto;
+    };
 
-    const tableData = estudiantesPresentes.map((est, index) => [
+    const filas = [
+      {
+        izq: { label: 'INSTITUCIÓN EDUCATIVA:', value: truncarTexto(institucion.nombre, 45) },
+        der: { label: 'COMUNA:', value: institucion.comuna || '' }
+      },
+      {
+        izq: { label: 'FORMADOR IME:', value: truncarTexto(institucion.formador, 45) },
+        der: { label: 'DOCENTE ENLACE INSTITUCIÓN:', value: truncarTexto(institucion.docente || '', 18) }
+      },
+      {
+        izq: { label: 'HORARIO DE CLASE', value: truncarTexto(institucion.horario, 45) },
+        der: { label: 'NÚMERO DE SESIÓN:', value: numeroSesion || '' }
+      },
+      {
+        izq: { label: 'OBSERVACIONES:', value: truncarTexto(observaciones || '', 45) },
+        der: { label: 'FECHA DE LA SESIÓN:', value: fechaSesion }
+      }
+    ];
+
+    filas.forEach((fila, index) => {
+      const y = infoStartY + (rowHeight * index);
+
+      doc.setFillColor(220, 220, 220);
+      doc.rect(startX, y, col1LabelWidth, rowHeight, 'FD');
+      doc.setFillColor(255, 255, 255);
+      doc.rect(startX + col1LabelWidth, y, col1ValueWidth, rowHeight, 'FD');
+      doc.setFillColor(220, 220, 220);
+      doc.rect(col2StartX, y, col2LabelWidth, rowHeight, 'FD');
+      doc.setFillColor(255, 255, 255);
+      doc.rect(col2StartX + col2LabelWidth, y, col2ValueWidth, rowHeight, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+
+      const labelIzqLines = fila.izq.label.split('\n');
+      if (labelIzqLines.length > 1) {
+        doc.setFontSize(7);
+        doc.text(labelIzqLines[0], startX + 2, y + 3.5);
+        doc.text(labelIzqLines[1], startX + 2, y + 5.5);
+      } else {
+        doc.setFontSize(8);
+        doc.text(fila.izq.label, startX + 2, y + 4.5);
+      }
+
+      const labelDerLines = fila.der.label.split('\n');
+      if (labelDerLines.length > 1) {
+        doc.setFontSize(7);
+        doc.text(labelDerLines[0], col2StartX + 2, y + 3.5);
+        doc.text(labelDerLines[1], col2StartX + 2, y + 5.5);
+      } else {
+        doc.setFontSize(8);
+        doc.text(fila.der.label, col2StartX + 2, y + 4.5);
+      }
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(fila.izq.value, startX + col1LabelWidth + 2, y + 4.5);
+      doc.text(fila.der.value, col2StartX + col2LabelWidth + 2, y + 4.5);
+    });
+
+    // PREPARAR DATOS DE LA TABLA - TODOS LOS ESTUDIANTES
+    const tableData = estudiantesActuales.map((est, index) => [
       index + 1,
       est.primerApellido || '',
       est.segundoApellido || '',
@@ -313,10 +287,12 @@ const DocentePage = () => {
       ''
     ]);
 
+    const cantidadPresentes = Object.values(asistencia).filter(Boolean).length;
+
     const tableStartY = infoStartY + (rowHeight * 4) + 2;
     const pageHeight = 210;
     const maxTableHeight = pageHeight - tableStartY - 10;
-    const numFilas = estudiantesPresentes.length;
+    const numFilas = estudiantesActuales.length;
     const headerHeight = 8;
     const alturaPorFila = (maxTableHeight - headerHeight) / numFilas;
 
@@ -330,7 +306,7 @@ const DocentePage = () => {
         'SEGUNDO\nNOMBRE',
         'DOC.\nIDENTIDAD',
         'TELÉFONO',
-        'FIRMA DEL\nESTUDIANTE'
+        'FIRMA DEL ESTUDIANTE'
       ]],
       body: tableData,
       margin: { left: 10, right: 10, top: tableStartY, bottom: 10 },
@@ -366,38 +342,51 @@ const DocentePage = () => {
       theme: 'grid',
       didDrawCell: (data) => {
         if (data.column.index === 7 && data.section === 'body') {
-          const estudiante = estudiantesPresentes[data.row.index];
-          const firmaImg = obtenerFirma(estudiante, firmasData.firmas);
+          const estudiante = estudiantesActuales[data.row.index];
+          const estaPresente = asistencia[estudiante.id];
 
-          try {
-            const img = new Image();
-            img.src = firmaImg;
+          if (estaPresente) {
+            const firmaImg = obtenerFirma(estudiante, firmasData.firmas);
 
-            const maxWidth = data.cell.width - 4;
-            const maxHeight = data.cell.height - 2;
+            try {
+              const img = new Image();
+              img.src = firmaImg;
 
-            let width = img.width || maxWidth;
-            let height = img.height || maxHeight;
+              const maxWidth = data.cell.width - 4;
+              const maxHeight = data.cell.height - 2;
 
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = width * ratio;
-            height = height * ratio;
+              let width = img.width || maxWidth;
+              let height = img.height || maxHeight;
 
-            const x = data.cell.x + (data.cell.width - width) / 2;
-            const y = data.cell.y + (data.cell.height - height) / 2;
+              const ratio = Math.min(maxWidth / width, maxHeight / height);
+              width = width * ratio;
+              height = height * ratio;
 
-            doc.addImage(firmaImg, 'PNG', x, y, width, height, undefined, 'FAST');
-          } catch (error) {
-            console.error('Error al insertar firma:', error);
+              const x = data.cell.x + (data.cell.width - width) / 2;
+              const y = data.cell.y + (data.cell.height - height) / 2;
+
+              doc.addImage(firmaImg, 'PNG', x, y, width, height, undefined, 'FAST');
+            } catch (error) {
+              console.error('Error al insertar firma:', error);
+            }
           }
+          // Si está ausente, el campo queda en blanco (no se dibuja nada)
         }
       }
     });
+
+    // RESUMEN AL FINAL
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    const finalY = doc.lastAutoTable.finalY + 5;
+    doc.text(`Total estudiantes: ${estudiantesActuales.length}`, 15, finalY);
+    doc.text(`Presentes: ${cantidadPresentes}`, 80, finalY);
+    doc.text(`Ausentes: ${estudiantesActuales.length - cantidadPresentes}`, 140, finalY);
+
     const fecha = new Date(fechaSesion).toLocaleDateString('es-CO').replace(/\//g, '-');
     const nombreArchivo = `Asistencia_${institucion.nombre.replace(/\s+/g, '_')}_${fecha}.pdf`;
     doc.save(nombreArchivo);
   };
-
   if (cargando) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
@@ -687,17 +676,11 @@ const DocentePage = () => {
         <div className="text-center">
           <button
             onClick={generarPDF}
-            disabled={presentes === 0}
-            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-lg font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-lg font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 shadow-xl transform hover:scale-105 transition-all"
           >
             <Download size={24} />
-            Generar Planilla PDF ({presentes} estudiantes)
+            Generar Planilla PDF (Total: {total} - Presentes: {presentes})
           </button>
-          {presentes === 0 && (
-            <p className="text-sm text-red-600 mt-2 font-semibold">
-              ⚠️ Debes marcar al menos un estudiante presente
-            </p>
-          )}
         </div>
       </div>
     </div>
