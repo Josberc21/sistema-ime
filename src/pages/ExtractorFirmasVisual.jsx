@@ -856,7 +856,7 @@ const terminarDibujo = () => {
         alert('✅ Firma guardada correctamente');
     };
     // Borrar firma
-    const borrarFirma = async (documento) => {
+     const borrarFirma = async (documento) => {
         if (!confirm('¿Estás seguro de que deseas eliminar esta firma?')) {
             return;
         }
@@ -864,24 +864,25 @@ const terminarDibujo = () => {
         const nuevasFirmas = { ...firmasCapturadas };
         delete nuevasFirmas[documento];
 
-        setFirmasCapturadas(nuevasFirmas);
-
-        // Guardar en el backend automáticamente
         try {
             await guardarFirmasBatch(nuevasFirmas);
             console.log('✅ Firma eliminada del servidor');
+            
+            // Recargar datos del servidor para confirmar la eliminación
+            await cargarDatosIniciales();
+            
             alert('✅ Firma eliminada correctamente');
+            
+            // Si el estudiante actual es el que se borró, limpiar selección
+            if (estudianteActual?.documento === documento) {
+                setEstudianteActual(null);
+                setPuntoInicio(null);
+                setPuntoFin(null);
+                setAreaSeleccionada(null);
+            }
         } catch (error) {
             console.error('Error al eliminar firma:', error);
-            alert('⚠️ Error al eliminar del servidor, pero se eliminó localmente');
-        }
-
-        // Si el estudiante actual es el que se borró, limpiar selección
-        if (estudianteActual?.documento === documento) {
-            setEstudianteActual(null);
-            setPuntoInicio(null);
-            setPuntoFin(null);
-            setAreaSeleccionada(null);
+            alert('⚠️ Error al eliminar del servidor');
         }
     };
     // Descargar firmas.json
