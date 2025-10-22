@@ -517,65 +517,65 @@ const ExtractorFirmasVisual = () => {
     // ========== FUNCIONES DE FIRMA TÁCTIL ==========
 
     const iniciarDibujo = (e) => {
-    setDibujando(true);
-    const canvas = padFirmaRef.current;
-    const rect = canvas.getBoundingClientRect();
+        setDibujando(true);
+        const canvas = padFirmaRef.current;
+        const rect = canvas.getBoundingClientRect();
 
-    // Calcular escala del canvas
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+        // Calcular escala del canvas
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
-    let x, y;
-    if (e.type === 'touchstart') {
-        const touch = e.touches[0];
-        x = (touch.clientX - rect.left) * scaleX;
-        y = (touch.clientY - rect.top) * scaleY;
-    } else {
-        x = (e.clientX - rect.left) * scaleX;
-        y = (e.clientY - rect.top) * scaleY;
-    }
+        let x, y;
+        if (e.type === 'touchstart') {
+            const touch = e.touches[0];
+            x = (touch.clientX - rect.left) * scaleX;
+            y = (touch.clientY - rect.top) * scaleY;
+        } else {
+            x = (e.clientX - rect.left) * scaleX;
+            y = (e.clientY - rect.top) * scaleY;
+        }
 
-    setUltimaPosicion({ x, y });
-};
+        setUltimaPosicion({ x, y });
+    };
 
-const dibujar = (e) => {
-    if (!dibujando) return;
+    const dibujar = (e) => {
+        if (!dibujando) return;
 
-    e.preventDefault();
-    const canvas = padFirmaRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const rect = canvas.getBoundingClientRect();
+        e.preventDefault();
+        const canvas = padFirmaRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const rect = canvas.getBoundingClientRect();
 
-    // Calcular escala del canvas
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+        // Calcular escala del canvas
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
-    let x, y;
-    if (e.type === 'touchmove') {
-        const touch = e.touches[0];
-        x = (touch.clientX - rect.left) * scaleX;
-        y = (touch.clientY - rect.top) * scaleY;
-    } else {
-        x = (e.clientX - rect.left) * scaleX;
-        y = (e.clientY - rect.top) * scaleY;
-    }
+        let x, y;
+        if (e.type === 'touchmove') {
+            const touch = e.touches[0];
+            x = (touch.clientX - rect.left) * scaleX;
+            y = (touch.clientY - rect.top) * scaleY;
+        } else {
+            x = (e.clientX - rect.left) * scaleX;
+            y = (e.clientY - rect.top) * scaleY;
+        }
 
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3; // Aumentado para mejor visualización en móvil
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-    ctx.beginPath();
-    ctx.moveTo(ultimaPosicion.x, ultimaPosicion.y);
-    ctx.lineTo(x, y);
-    ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ultimaPosicion.x, ultimaPosicion.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
 
-    setUltimaPosicion({ x, y });
-};
+        setUltimaPosicion({ x, y });
+    };
 
-const terminarDibujo = () => {
-    setDibujando(false);
-};
+    const terminarDibujo = () => {
+        setDibujando(false);
+    };
 
     const limpiarPadFirma = () => {
         const canvas = padFirmaRef.current;
@@ -654,6 +654,7 @@ const terminarDibujo = () => {
     };
 
     // ========== FIN FUNCIONES DE FIRMA TÁCTIL ==========
+
     // Dibujar en canvas
     useEffect(() => {
         if (!imagenCargada || !canvasRef.current) return;
@@ -822,7 +823,7 @@ const terminarDibujo = () => {
         }
     };
 
-    // Guardar firma
+    // Guardar firma - CORREGIDO
     const guardarFirma = async () => {
         if (!estudianteActual || !areaSeleccionada) {
             alert('⚠️ Primero selecciona un área de la imagen');
@@ -834,29 +835,30 @@ const terminarDibujo = () => {
             [estudianteActual.documento]: areaSeleccionada
         };
 
-        setFirmasCapturadas(nuevasFirmas);
-
-        // Guardar en el backend automáticamente
         try {
             await guardarFirmasBatch(nuevasFirmas);
             console.log('✅ Firma guardada en el servidor');
+            
+            // Recargar datos del servidor
+            await cargarDatosIniciales();
+            
+            setPuntoInicio(null);
+            setPuntoFin(null);
+            setAreaSeleccionada(null);
+            setEstudianteActual(null);
+            setModo('pan');
+            setModoEditor(false);
+            setAnguloRotacion(0);
+
+            alert('✅ Firma guardada correctamente');
         } catch (error) {
             console.error('Error al guardar firma:', error);
-            alert('⚠️ Error al guardar en el servidor, pero se guardó localmente');
+            alert('⚠️ Error al guardar en el servidor');
         }
-
-        setPuntoInicio(null);
-        setPuntoFin(null);
-        setAreaSeleccionada(null);
-        setEstudianteActual(null);
-        setModo('pan');
-        setModoEditor(false);
-        setAnguloRotacion(0);
-
-        alert('✅ Firma guardada correctamente');
     };
-    // Borrar firma
-     const borrarFirma = async (documento) => {
+
+    // Borrar firma - CORREGIDO
+    const borrarFirma = async (documento) => {
         if (!confirm('¿Estás seguro de que deseas eliminar esta firma?')) {
             return;
         }
@@ -868,10 +870,8 @@ const terminarDibujo = () => {
             await guardarFirmasBatch(nuevasFirmas);
             console.log('✅ Firma eliminada del servidor');
             
-            // Recargar datos del servidor para confirmar la eliminación
+            // Recargar datos del servidor para confirmar
             await cargarDatosIniciales();
-            
-            alert('✅ Firma eliminada correctamente');
             
             // Si el estudiante actual es el que se borró, limpiar selección
             if (estudianteActual?.documento === documento) {
@@ -880,11 +880,14 @@ const terminarDibujo = () => {
                 setPuntoFin(null);
                 setAreaSeleccionada(null);
             }
+            
+            alert('✅ Firma eliminada correctamente');
         } catch (error) {
             console.error('Error al eliminar firma:', error);
             alert('⚠️ Error al eliminar del servidor');
         }
     };
+
     // Descargar firmas.json
     const descargarJSON = () => {
         const json = JSON.stringify({ firmas: firmasCapturadas }, null, 2);
@@ -956,7 +959,6 @@ const terminarDibujo = () => {
                                             onClick={() => setInstitucionSeleccionada(inst)}
                                             className="w-full p-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl transition-all transform hover:scale-102 shadow-lg text-left"
                                         >
-
                                             <h3 className="text-2xl font-bold">{inst.nombre}</h3>
                                             <p className="text-blue-100 text-sm mt-1">
                                                 👥 {inst.estudiantes.length} estudiantes
@@ -1007,7 +1009,7 @@ const terminarDibujo = () => {
                     {/* Cargar imagen */}
                     <div className="mb-6">
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
-                            📄 Cargar planilla escaneada
+                            📄 Cargar planilla escaneada (Opcional - Solo si vas a extraer de planilla)
                         </label>
                         <input
                             type="file"
@@ -1015,6 +1017,9 @@ const terminarDibujo = () => {
                             onChange={cargarImagen}
                             className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500"
                         />
+                        <p className="text-xs text-gray-500 mt-2">
+                            💡 Puedes usar "Dibujar Firma" sin cargar ninguna imagen
+                        </p>
                     </div>
 
                     {/* Controles de procesamiento */}
@@ -1063,9 +1068,9 @@ const terminarDibujo = () => {
                     </div>
                 </div>
 
-                {imagenCargada && (
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {/* Panel izquierdo: Canvas */}
+                <div className="grid md:grid-cols-3 gap-6">
+                    {/* Panel izquierdo: Canvas o mensaje */}
+                    {imagenCargada ? (
                         <div className="md:col-span-2 bg-white rounded-2xl shadow-xl p-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold text-gray-800">
@@ -1315,6 +1320,7 @@ const terminarDibujo = () => {
                                     </p>
                                 </div>
                             )}
+
                             {/* Modal Pad de Firma */}
                             {mostrarPadFirma && (
                                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -1374,91 +1380,106 @@ const terminarDibujo = () => {
                                 </div>
                             )}
                         </div>
-
-                        {/* Panel derecho: Lista de estudiantes */}
-                        <div className="bg-white rounded-2xl shadow-xl p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">
-                                👥 Estudiantes ({institucionSeleccionada.estudiantes.length})
-                            </h3>
-
-                            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                                {institucionSeleccionada.estudiantes.map((est, index) => {
-                                    const tieneFirma = firmasCapturadas[est.documento];
-                                    const esSeleccionado = estudianteActual?.id === est.id;
-
-                                    return (
-                                        <div className="w-full">
-                                            <button
-                                                onClick={() => {
-                                                    setEstudianteActual(est);
-                                                    setPuntoInicio(null);
-                                                    setPuntoFin(null);
-                                                    setAreaSeleccionada(null);
-                                                    setModoEditor(false);
-                                                    setAnguloRotacion(0);
-                                                    setModo('select');
-                                                }}
-                                                className={`w-full p-3 rounded-lg text-left transition-all ${esSeleccionado
-                                                    ? 'bg-purple-500 text-white'
-                                                    : tieneFirma
-                                                        ? 'bg-green-100 hover:bg-green-200'
-                                                        : 'bg-gray-100 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex-1">
-                                                        <p className="font-semibold text-sm">
-                                                            {index + 1}. {est.primerNombre} {est.primerApellido}
-                                                        </p>
-                                                        <p className={`text-xs ${esSeleccionado ? 'text-purple-100' : 'text-gray-600'}`}>
-                                                            {est.documento}
-                                                        </p>
-                                                    </div>
-                                                    {tieneFirma && (
-                                                        <CheckCircle
-                                                            size={20}
-                                                            className={esSeleccionado ? 'text-white' : 'text-green-600'}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </button>
-
-                                            {/* Botón para borrar firma */}
-                                            {tieneFirma && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        borrarFirma(est.documento);
-                                                    }}
-                                                    className="w-full mt-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs font-semibold flex items-center justify-center gap-2"
-                                                >
-                                                    🗑️ Eliminar firma
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                                <p className="text-xs text-yellow-900 font-semibold mb-2">
-                                    💡 Instrucciones:
-                                </p>
-                                <ol className="text-xs text-yellow-800 space-y-1 list-decimal list-inside">
-                                    <li>Activa procesamiento automático</li>
-                                    <li>Selecciona un estudiante</li>
-                                    <li>Usa "Mover" para navegar</li>
-                                    <li>Cambia a "Seleccionar"</li>
-                                    <li>Dibuja rectángulo GRANDE en la firma</li>
-                                    <li>Click "Editar / Rotar"</li>
-                                    <li>Rota hasta alinear horizontal</li>
-                                    <li>Usa borrador para limpiar</li>
-                                    <li>Aplica cambios y guarda</li>
-                                </ol>
+                    ) : (
+                        <div className="md:col-span-2 bg-white rounded-2xl shadow-xl p-6">
+                            <div className="text-center py-12">
+                                <p className="text-gray-500 text-lg mb-2">📄 No hay imagen cargada</p>
+                                <p className="text-gray-400 text-sm mb-4">Puedes usar "Dibujar Firma" sin cargar imagen</p>
+                                <button
+                                    onClick={abrirPadFirma}
+                                    disabled={!estudianteActual}
+                                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    ✍️ Dibujar Firma Táctil
+                                </button>
+                                {!estudianteActual && (
+                                    <p className="text-xs text-gray-400 mt-2">Selecciona un estudiante primero →</p>
+                                )}
                             </div>
                         </div>
+                    )}
+
+                    {/* Panel derecho: Lista de estudiantes - SIEMPRE VISIBLE */}
+                    <div className="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                            👥 Estudiantes ({institucionSeleccionada.estudiantes.length})
+                        </h3>
+
+                        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                            {institucionSeleccionada.estudiantes.map((est, index) => {
+                                const tieneFirma = firmasCapturadas[est.documento];
+                                const esSeleccionado = estudianteActual?.id === est.id;
+
+                                return (
+                                    <div key={est.id} className="w-full">
+                                        <button
+                                            onClick={() => {
+                                                setEstudianteActual(est);
+                                                setPuntoInicio(null);
+                                                setPuntoFin(null);
+                                                setAreaSeleccionada(null);
+                                                setModoEditor(false);
+                                                setAnguloRotacion(0);
+                                                setModo('select');
+                                            }}
+                                            className={`w-full p-3 rounded-lg text-left transition-all ${esSeleccionado
+                                                ? 'bg-purple-500 text-white'
+                                                : tieneFirma
+                                                    ? 'bg-green-100 hover:bg-green-200'
+                                                    : 'bg-gray-100 hover:bg-gray-200'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-sm">
+                                                        {index + 1}. {est.primerNombre} {est.primerApellido}
+                                                    </p>
+                                                    <p className={`text-xs ${esSeleccionado ? 'text-purple-100' : 'text-gray-600'}`}>
+                                                        {est.documento}
+                                                    </p>
+                                                </div>
+                                                {tieneFirma && (
+                                                    <CheckCircle
+                                                        size={20}
+                                                        className={esSeleccionado ? 'text-white' : 'text-green-600'}
+                                                    />
+                                                )}
+                                            </div>
+                                        </button>
+
+                                        {/* Botón para borrar firma */}
+                                        {tieneFirma && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    borrarFirma(est.documento);
+                                                }}
+                                                className="w-full mt-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs font-semibold flex items-center justify-center gap-2"
+                                            >
+                                                🗑️ Eliminar firma
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <p className="text-xs text-yellow-900 font-semibold mb-2">
+                                💡 Instrucciones:
+                            </p>
+                            <ol className="text-xs text-yellow-800 space-y-1 list-decimal list-inside">
+                                <li>Selecciona un estudiante</li>
+                                <li>Opción A: Dibuja firma táctil directamente</li>
+                                <li>Opción B: Carga imagen escaneada</li>
+                                <li>Usa "Mover" para navegar la imagen</li>
+                                <li>Cambia a "Seleccionar" y dibuja rectángulo</li>
+                                <li>Edita/Rota si es necesario</li>
+                                <li>Guarda la firma</li>
+                            </ol>
+                        </div>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );
