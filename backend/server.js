@@ -224,7 +224,7 @@ app.post('/api/firmas', (req, res) => {
   }
 });
 
-// 6. Guardar múltiples firmas
+// 6. Guardar múltiples firmas (REPLACE COMPLETO)
 app.post('/api/firmas/batch', (req, res) => {
   const { firmas } = req.body;
 
@@ -237,10 +237,11 @@ app.post('/api/firmas/batch', (req, res) => {
     return res.status(500).json({ error: 'Error al leer firmas' });
   }
 
-  // Fusionar firmas nuevas con las existentes
-  data.firmas = { ...data.firmas, ...firmas };
+  // REPLACE COMPLETO - Sobrescribir todas las firmas
+  data.firmas = firmas;
 
   if (escribirJSON(FIRMAS_PATH, data)) {
+    console.log('✅ Firmas guardadas (REPLACE completo):', Object.keys(firmas).length);
     res.json({ 
       success: true, 
       message: 'Firmas guardadas', 

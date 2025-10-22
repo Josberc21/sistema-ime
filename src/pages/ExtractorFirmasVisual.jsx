@@ -38,7 +38,7 @@ const ExtractorFirmasVisual = () => {
 
     // Nuevo: Estado para procesamiento
     const [procesarAutomatico, setProcesarAutomatico] = useState(true);
-    const [umbralTransparencia, setUmbralTransparencia] = useState(210);
+    const [umbralTransparencia, setUmbralTransparencia] = useState(220);
 
     // Estado para editor de firma
     const [modoEditor, setModoEditor] = useState(false);
@@ -610,26 +610,41 @@ const ExtractorFirmasVisual = () => {
         let firmaBase64 = canvas.toDataURL('image/png');
 
         if (procesarAutomatico) {
-            // Aplicar procesamiento
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-            tempCtx.drawImage(canvas, 0, 0);
+    // Aplicar procesamiento
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+    tempCtx.drawImage(canvas, 0, 0);
 
-            const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
+    const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
 
-            for (let i = 0; i < data.length; i += 4) {
-                const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                if (brightness > 240) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            tempCtx.putImageData(imageData, 0, 0);
-            firmaBase64 = autoRecortarMejorado(tempCanvas);
+    for (let i = 0; i < data.length; i += 4) {
+        const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        
+        if (brightness > 240) {
+            // Fondo blanco → transparente
+            data[i + 3] = 0;
+        } else if (brightness < 100) {
+            // Trazo negro → mantener negro puro
+            data[i] = 0;
+            data[i + 1] = 0;
+            data[i + 2] = 0;
+            data[i + 3] = 255;
+        } else {
+            // Grises → oscurecer
+            const factor = (240 - brightness) / 240;
+            data[i] = Math.floor(data[i] * (1 - factor * 0.7));
+            data[i + 1] = Math.floor(data[i + 1] * (1 - factor * 0.7));
+            data[i + 2] = Math.floor(data[i + 2] * (1 - factor * 0.7));
+            data[i + 3] = 255;
         }
+    }
+
+    tempCtx.putImageData(imageData, 0, 0);
+    firmaBase64 = autoRecortarMejorado(tempCanvas);
+}
 
         setAreaSeleccionada(firmaBase64);
         setMostrarPadFirma(false);
@@ -788,26 +803,33 @@ const ExtractorFirmasVisual = () => {
                     const imageData = tempCtx.getImageData(0, 0, imgWidth, imgHeight);
                     const data = imageData.data;
 
-                    // PROCESAMIENTO MEJORADO
-                    for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
+                   // PROCESAMIENTO MEJORADO CON GRADIENTE
+for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
 
-                        // Calcular brillo del píxel
-                        const brightness = (r + g + b) / 3;
+    // Calcular brillo del píxel
+    const brightness = (r + g + b) / 3;
 
-                        // Si es muy claro (fondo gris, blanco, cuadrículas), hacerlo transparente
-                        if (brightness > umbralTransparencia) {
-                            data[i + 3] = 0; // Transparente
-                        } else {
-                            // Si es oscuro (tinta de firma), convertir a negro puro
-                            data[i] = 0;
-                            data[i + 1] = 0;
-                            data[i + 2] = 0;
-                            data[i + 3] = 255; // Opaco
-                        }
-                    }
+    if (brightness > umbralTransparencia) {
+        // Fondo claro → transparente
+        data[i + 3] = 0;
+    } else if (brightness < 100) {
+        // Píxeles muy oscuros → negro puro (tinta de firma)
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+        data[i + 3] = 255;
+    } else {
+        // Píxeles grises → oscurecer gradualmente
+        const factor = (umbralTransparencia - brightness) / umbralTransparencia;
+        data[i] = Math.floor(r * (1 - factor * 0.7));
+        data[i + 1] = Math.floor(g * (1 - factor * 0.7));
+        data[i + 2] = Math.floor(b * (1 - factor * 0.7));
+        data[i + 3] = 255;
+    }
+}
 
                     tempCtx.putImageData(imageData, 0, 0);
 
@@ -1047,8 +1069,8 @@ const ExtractorFirmasVisual = () => {
                                 </label>
                                 <input
                                     type="range"
-                                    min="180"
-                                    max="230"
+                                    min="200"
+                                    max="245"
                                     value={umbralTransparencia}
                                     onChange={(e) => setUmbralTransparencia(Number(e.target.value))}
                                     className="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
